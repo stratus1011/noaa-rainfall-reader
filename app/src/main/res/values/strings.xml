@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">NOAA Rainfall Reader</string>
+    <string name="overall_total_text">Overall: %1$.2f inches total</string>
+</resources>
