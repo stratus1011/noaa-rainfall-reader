@@ -1,7 +1,6 @@
 package com.stratusapps.noaarainfallreader
 
 import java.lang.IndexOutOfBoundsException
-import java.lang.NumberFormatException
 
 const val AZ_STATE_CODE = "02"
 const val TOTAL_AMT_IDENTIFIER = "2500 "
@@ -9,7 +8,7 @@ const val ENTRIES_BEGIN_INDEX = 30
 const val SUSPECT_TIMES_FLAG = "R"
 
 object PrecipitationEntryHelper {
-    fun createPrecipitationEntries(fileContents: List<String>): List<PrecipitationEntry> {
+    fun createPrecipitationEntries(fileContents: List<String>): List<YearPrecipitationEntry> {
         return fileContents.fold(emptyList()) { sum: List<String>, content: String ->
             sum + content.split("\n") // breaks up each file by new lines and joins that list with the overall list
         }.filter {
@@ -21,9 +20,9 @@ object PrecipitationEntryHelper {
         }.groupBy {
             it.year // Groups the list of entries by year to allow for totaling by year
         }.map {
-            // Totals the precipitaion and creates an entry for that year with the overall total
-            val total = it.value.totalPreciptation()
-            PrecipitationEntry(it.key, total, it.value.firstOrNull()?.stateCode ?: "")
+            // Totals the precipitation and creates an entry for that year with the overall total
+            val total = it.value.totalPrecipitationByDay()
+            YearPrecipitationEntry(it.key, total)
         }
     }
 
@@ -31,8 +30,11 @@ object PrecipitationEntryHelper {
         // Only creates an entry with the details we care about
         return PrecipitationEntry(
             year = extractEntrySection(textRecord, EntryPositions.YEAR),
+            day = extractEntrySection(textRecord, EntryPositions.DAY),
+            month = extractEntrySection(textRecord, EntryPositions.MONTH),
             amount = getFinalPrecipitationAmtForEntry(textRecord.substring(ENTRIES_BEGIN_INDEX)),
-            stateCode = extractEntrySection(textRecord, EntryPositions.STATE_CODE)
+            stateCode = extractEntrySection(textRecord, EntryPositions.STATE_CODE),
+            stationId = extractEntrySection(textRecord, EntryPositions.STATION_ID)
         )
     }
 
@@ -62,8 +64,22 @@ object PrecipitationEntryHelper {
 }
 
 // Helpful extension method to get the total precipitation for a list of PrecipitationEntry
-fun List<PrecipitationEntry>.totalPreciptation(): Double {
-    return this.fold(0.0) { sum: Double, record: PrecipitationEntry ->
+// It will take the max precipitation amount for that day as the total for the day
+fun List<PrecipitationEntry>.totalPrecipitationByDay(): Double {
+    var total = 0.0
+    this.groupBy { Pair(it.month, it.day) }
+        .forEach {
+            total += it.value.maxBy { entry ->
+                entry.amount
+            }?.amount ?: 0.0
+        }
+    return total
+}
+
+// Helpful extension method to get the total precipitation for a list of YearPrecipitationEntry
+fun List<YearPrecipitationEntry>.totalPreciptation(): Double {
+    return this.fold(0.0) { sum: Double, record: YearPrecipitationEntry ->
         sum + record.amount
     }
 }
+

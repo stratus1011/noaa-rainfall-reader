@@ -16,13 +16,13 @@ class MainActivity : AppCompatActivity() {
     // Launches the setup on a background thread to not block the UI
     private fun setup() = GlobalScope.launch(Dispatchers.Default) {
         val contents = FileHelper.readFiles(this@MainActivity)
-        val precipitations: List<PrecipitationEntry> =
+        val precipitations: List<YearPrecipitationEntry> =
             PrecipitationEntryHelper.createPrecipitationEntries(contents)
         showPrecipitationDetails(precipitations)
     }
 
     // Takes the precipitation entry data and displays it in the UI
-    private suspend fun showPrecipitationDetails(precipitations: List<PrecipitationEntry>) =
+    private suspend fun showPrecipitationDetails(precipitations: List<YearPrecipitationEntry>) =
         withContext(Dispatchers.Main) {
             val resultsListView = findViewById<ListView>(R.id.results_lv)
             val total = precipitations.totalPreciptation()
