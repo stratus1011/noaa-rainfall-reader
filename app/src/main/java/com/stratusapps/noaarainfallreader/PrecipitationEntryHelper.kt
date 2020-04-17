@@ -6,6 +6,7 @@ import java.lang.NumberFormatException
 const val AZ_STATE_CODE = "02"
 const val TOTAL_AMT_IDENTIFIER = "2500 "
 const val ENTRIES_BEGIN_INDEX = 30
+const val SUSPECT_TIMES_FLAG = "R"
 
 object PrecipitationEntryHelper {
     fun createPrecipitationEntries(fileContents: List<String>): List<PrecipitationEntry> {
@@ -47,10 +48,14 @@ object PrecipitationEntryHelper {
     // Retrieves the final section of the record where the actual total for that day is saved
     private fun getFinalPrecipitationAmtForEntry(textRecord: String): Double {
         val index = textRecord.indexOf(TOTAL_AMT_IDENTIFIER)
-        val precipitationTotalBlock = textRecord.substring(index + TOTAL_AMT_IDENTIFIER.length)
         return try {
+            // Parses the remaining part of the text record and removes the SUSPECT_TIMES_FLAG which just
+            // indicates some of the times for entries on that the time of
+            // day may in incorrect, but the total is still correct and should be used
+            val precipitationTotalBlock = textRecord.substring(index + TOTAL_AMT_IDENTIFIER.length)
+                .replace(SUSPECT_TIMES_FLAG, "").trim()
             precipitationTotalBlock.toDouble() / 100.0
-        } catch (ex: NumberFormatException) {
+        } catch (ex: Exception) {
             0.0
         }
     }
